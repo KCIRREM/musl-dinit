@@ -1,0 +1,6 @@
+type            = scripted
+command         = /usr/bin/mdevd -O 4
+restart         = false
+depends-on      = early-prepare.target
+depends-on      = kmod-static-nodes
+depends-on      = tmpfiles-dev

@@ -1,0 +1,4 @@
+type       = scripted
+command    = /usr/bin/mdevd-coldplug -O 4
+restart    = false
+depends-on = mdevd
