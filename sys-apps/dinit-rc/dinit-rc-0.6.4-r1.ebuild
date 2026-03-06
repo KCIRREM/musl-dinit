@@ -13,6 +13,10 @@ RDEPEND="sys-apps/artix-cgroups"
 SRC_URI="https://gitea.artixlinux.org/artix/dinit-rc/archive/${PV}.tar.gz"
 S="${WORKDIR}/${PN}"
 
+PATCHES=(
+	"${FILESDIR}"/fix-paths-and-root-ro.patch
+)
+
 src_prepare() {
     default
 

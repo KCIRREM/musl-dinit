@@ -1,0 +1,81 @@
+diff --git a/Makefile b/Makefile
+index d9b81f5..19b1b1b 100644
+--- a/Makefile
++++ b/Makefile
+@@ -38,16 +38,12 @@ SERVICES = \
+ 	locale \
+ 	modules \
+ 	net-lo \
+-	network \
+-	network-pre \
+ 	pseudofs \
+ 	random-seed \
+ 	recovery \
+-	root-ro \
+ 	single \
+ 	swap \
+ 	sysctl \
+-	sysusers \
+ 	system \
+ 	tmpfiles-dev \
+ 	tmpfiles-setup \
+diff --git a/scripts/tmpfiles b/scripts/tmpfiles
+index 882aa0d..9c16109 100644
+--- a/scripts/tmpfiles
++++ b/scripts/tmpfiles
+@@ -1,6 +1,6 @@
+ #!/bin/sh
+ 
+-/usr/bin/etmpfiles "$@"
++/usr/bin/systemd-tmpfiles "$@"
+ 
+ ret=$?
+ case "$ret" in
+diff --git a/services/binfmt b/services/binfmt
+index 117f981..adb806e 100644
+--- a/services/binfmt
++++ b/services/binfmt
+@@ -1,4 +1,4 @@
+ type       = scripted
+-command    = /usr/lib/artix/binfmt.sh
++command    = /usr/lib/gentoo/binfmt.sh
+ depends-on = early-fs-local.target
+ restart    = false
+diff --git a/services/cgroups b/services/cgroups
+index 941b92b..947473f 100644
+--- a/services/cgroups
++++ b/services/cgroups
+@@ -1,4 +1,4 @@
+ type       = scripted
+-command    = /bin/bash /usr/lib/artix/mount-cgroups.sh
++command    = /bin/bash /usr/lib/gentoo/mount-cgroups.sh
+ restart    = false
+ depends-on = pseudofs
+diff --git a/services/early-prepare.target b/services/early-prepare.target
+index c0d65d9..43fcd7a 100644
+--- a/services/early-prepare.target
++++ b/services/early-prepare.target
+@@ -1,5 +1,4 @@
+ type       = internal
+-depends-on = root-ro
+ depends-on = pseudofs
+ depends-on = cgroups
+ depends-on = tmpfs
+diff --git a/services/local.target b/services/local.target
+index fb9f605..63f511a 100644
+--- a/services/local.target
++++ b/services/local.target
+@@ -4,4 +4,3 @@ stop-command = /usr/lib/dinit/rclocal shutdown
+ restart      = false
+ depends-on   = pre-local.target
+ depends-on   = tmpfiles-setup
+-depends-on   = sysusers
+diff --git a/services/tmpfiles-dev b/services/tmpfiles-dev
+index 4682d97..024dae7 100644
+--- a/services/tmpfiles-dev
++++ b/services/tmpfiles-dev
+@@ -3,4 +3,3 @@ command    = /usr/lib/dinit/tmpfiles --prefix=/dev --create --boot
+ restart    = false
+ depends-on = pseudofs
+ depends-on = kmod-static-nodes
+-depends-on = root-ro

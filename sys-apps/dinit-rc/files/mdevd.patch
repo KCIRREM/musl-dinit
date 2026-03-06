@@ -1,17 +1,8 @@
 diff --git a/Makefile b/Makefile
-index d9b81f5..e3574a2 100644
+index 19b1b1b..761b5ac 100644
 --- a/Makefile
 +++ b/Makefile
-@@ -38,8 +38,6 @@ SERVICES = \
- 	locale \
- 	modules \
- 	net-lo \
--	network \
--	network-pre \
- 	pseudofs \
- 	random-seed \
- 	recovery \
-@@ -52,10 +50,8 @@ SERVICES = \
+@@ -48,10 +48,8 @@ SERVICES = \
  	tmpfiles-dev \
  	tmpfiles-setup \
  	tmpfs \
@@ -24,7 +15,16 @@ index d9b81f5..e3574a2 100644
  
  TARGETS = \
  	early-console.target \
-@@ -175,7 +171,7 @@ install:
+@@ -84,8 +82,6 @@ SCRIPTS = \
+ 	pseudofs \
+ 	rclocal \
+ 	tmpfiles \
+-	udevd \
+-	udev-trigger \
+ 	vconsole
+ 
+ TTY_SERVICES = \
+@@ -171,7 +167,7 @@ install:
  	done
  	# install default service
  	ln -sf ../agetty $(DESTDIR)$(DINITSRVDIR)/boot.d/agetty
@@ -33,26 +33,6 @@ index d9b81f5..e3574a2 100644
  	# shutdown hook
  	install -Dm755 misc/shutdown-hook $(DESTDIR)$(LIBDIR)/dinit/shutdown-hook
  	# misc
-diff --git a/services/binfmt b/services/binfmt
-index 117f981..adb806e 100644
---- a/services/binfmt
-+++ b/services/binfmt
-@@ -1,4 +1,4 @@
- type       = scripted
--command    = /usr/lib/artix/binfmt.sh
-+command    = /usr/lib/gentoo/binfmt.sh
- depends-on = early-fs-local.target
- restart    = false
-diff --git a/services/cgroups b/services/cgroups
-index 941b92b..947473f 100644
---- a/services/cgroups
-+++ b/services/cgroups
-@@ -1,4 +1,4 @@
- type       = scripted
--command    = /bin/bash /usr/lib/artix/mount-cgroups.sh
-+command    = /bin/bash /usr/lib/gentoo/mount-cgroups.sh
- restart    = false
- depends-on = pseudofs
 diff --git a/services/early-devices.target b/services/early-devices.target
 index b9713c4..be2df02 100644
 --- a/services/early-devices.target
@@ -75,3 +55,15 @@ index 2dafa29..7b3990f 100644
 -after         = udev-settle
 +depends-ms    = mdevd
 +after         = mdevd-coldplug
+diff --git a/services/hwclock b/services/hwclock
+index a2e0151..92bf56d 100644
+--- a/services/hwclock
++++ b/services/hwclock
+@@ -2,6 +2,6 @@ type         = scripted
+ command      = /usr/lib/dinit/hwclock start
+ stop-command = /usr/lib/dinit/hwclock stop
+ restart      = false
+-depends-on   = udevd-early
++depends-on   = mdevd
+ depends-on   = early-prepare.target
+ depends-on   = early-root-rw.target
