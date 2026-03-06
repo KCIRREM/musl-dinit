@@ -131,7 +131,7 @@ src_configure() {
 		--target=${CTARGET} \
 		--prefix="${EPREFIX}${sysroot}/usr" \
 		--syslibdir="${EPREFIX}${sysroot}/lib" \
-		--disable-gcc-wrapper
+		--disable-gcc-wrapper \
 		$(usev mimalloc "--with-malloc=external") || die
 }
 
