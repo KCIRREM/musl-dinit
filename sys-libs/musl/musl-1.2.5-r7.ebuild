@@ -35,7 +35,7 @@ SRC_URI+="
 
 LICENSE="MIT LGPL-2 GPL-2"
 SLOT="0"
-IUSE="crypt headers-only split-usr +mimalloc"
+IUSE="crypt headers-only split-usr mimalloc"
 
 QA_SONAME="usr/lib/libc.so"
 QA_DT_NEEDED="usr/lib/libc.so"
