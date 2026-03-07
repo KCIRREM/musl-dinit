@@ -36,3 +36,10 @@ src_configure() {
 		$(use_enable ioprio) \
 		$(use_enable oom-adj)
 }
+src_install() {
+	default
+	if use init; then
+		dosbin src/dinit
+		dosym -s -r /sbin/dinit /sbin/init
+	fi
+}
