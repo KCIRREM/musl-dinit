@@ -40,6 +40,6 @@ src_install() {
 	default
 	if use init; then
 		dosbin src/dinit
-		dosym -s -r /sbin/dinit /sbin/init
+		dosym -r /sbin/dinit /sbin/init
 	fi
 }
