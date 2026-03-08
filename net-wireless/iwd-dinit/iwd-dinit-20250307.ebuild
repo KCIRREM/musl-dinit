@@ -25,7 +25,7 @@ BDEPEND="sys-apps/dinit"
 CONFLICT="init-iwd"
 
 src_install() {
-	insinto /etc/dinit.d
+	insinto /usr/lib/dinit.d
 	doins iwd
 	doins ead
 }

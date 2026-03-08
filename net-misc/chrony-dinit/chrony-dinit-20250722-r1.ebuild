@@ -19,7 +19,7 @@ RDEPEND="
 "
 
 src_install() {
-	insinto /etc/dinit.d
+	insinto /usr/lib/dinit.d
 	doins chronyd
 	doins chrony
 

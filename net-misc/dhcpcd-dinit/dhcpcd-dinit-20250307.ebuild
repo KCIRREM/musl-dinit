@@ -23,6 +23,6 @@ RDEPEND="
 CONFLICT="init-dhcpcd"
 
 src_install() {
-	insinto /etc/dinit.d
+	insinto /usr/lib/dinit.d
 	doins dhcpcd
 }

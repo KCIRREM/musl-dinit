@@ -1,0 +1,4 @@
+type = process
+command = /usr/sbin/fcron -f
+logfile = /var/log/fcron.log
+waits-for = local.target
