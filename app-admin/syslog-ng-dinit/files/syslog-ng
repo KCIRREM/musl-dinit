@@ -1,7 +1,7 @@
 type            = process
-command         = /usr/bin/syslog-ng
+command         = /usr/lib/dinit/syslog-ng
 smooth-recovery = true
-logfile         = /var/log/dinit/syslog-ng
+logfile         = /var/log/dinit/syslog-ng.log
 options         = starts-log
 depends-on      = local.target
 before          = login.target

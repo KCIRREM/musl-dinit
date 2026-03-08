@@ -1,0 +1,22 @@
+#!/bin/sh
+
+FCRON_CONFIGFILE="/etc/fcron/fcron.conf"
+FCRON_OPTS=${FCRON_OPTS:-""}
+
+# Check config exists and has correct permissions
+if [ ! -r "${FCRON_CONFIGFILE}" ]; then
+    echo "fcron: config file ${FCRON_CONFIGFILE} missing or unreadable" >&2
+    exit 1
+fi
+chown root:fcron "${FCRON_CONFIGFILE}"
+chmod 0640 "${FCRON_CONFIGFILE}"
+
+# Create spooldir if missing
+FCRONTABS=$(sed -n 's:^fcrontabs[ \t]*=[ \t]*::p' "${FCRON_CONFIGFILE}")
+FCRONTABS=${FCRONTABS:-/var/spool/fcron}
+if [ ! -d "${FCRONTABS}" ]; then
+    echo "fcron: creating missing spooldir '${FCRONTABS}'"
+    /usr/libexec/fcron --newspooldir "${FCRONTABS}" || exit 1
+fi
+
+exec /usr/libexec/fcron ${FCRON_OPTS} -f -c "${FCRON_CONFIGFILE}"

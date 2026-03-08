@@ -17,7 +17,7 @@ src_configure() {
 }
 
 src_install() {
-	insinto /etc/dinit.d/
+	insinto /usr/lib/dinit.d/
 	doins dbus
 	doins dbus-pre
 	exeinto /usr/lib/dinit/

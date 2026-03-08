@@ -17,4 +17,6 @@ S="${WORKDIR}"
 src_install() {
 	insinto /usr/lib/dinit.d
 	doins "${FILESDIR}"/fcron
+	exeinto /usr/lib/dinit
+	newexe "${FILESDIR}"/fcron.script fcron
 }

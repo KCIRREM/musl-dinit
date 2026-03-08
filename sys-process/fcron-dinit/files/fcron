@@ -1,4 +1,5 @@
 type = process
-command = /usr/sbin/fcron -f
-logfile = /var/log/fcron.log
-waits-for = local.target
+command = /usr/lib/dinit/fcron
+smooth-recovery = true
+restart = true
+depends-on	= local.target

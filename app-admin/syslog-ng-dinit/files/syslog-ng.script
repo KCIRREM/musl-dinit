@@ -1,0 +1,33 @@
+#!/bin/sh
+
+SYSLOG_NG_CONFIGFILE=${SYSLOG_NG_CONFIGFILE:-/etc/syslog-ng/syslog-ng.conf}
+SYSLOG_NG_STATEFILE_DIR=${SYSLOG_NG_STATEFILE_DIR:-/var/lib/syslog-ng}
+SYSLOG_NG_STATEFILE=${SYSLOG_NG_STATEFILE:-${SYSLOG_NG_STATEFILE_DIR}/syslog-ng.persist}
+SYSLOG_NG_PIDFILE=${SYSLOG_NG_PIDFILE:-/run/syslog-ng.pid}
+SYSLOG_NG_CONTROLFILE=${SYSLOG_NG_CONTROLFILE:-/run/syslog-ng.ctl}
+SYSLOG_NG_USER=${SYSLOG_NG_USER:-root}
+SYSLOG_NG_GROUP=${SYSLOG_NG_GROUP:-root}
+SYSLOG_NG_OPTS=${SYSLOG_NG_OPTS:-""}
+
+# Check config exists
+if [ ! -r "${SYSLOG_NG_CONFIGFILE}" ]; then
+    echo "syslog-ng: config file ${SYSLOG_NG_CONFIGFILE} missing or unreadable" >&2
+    exit 1
+fi
+
+# Validate config before starting
+syslog-ng -s -f "${SYSLOG_NG_CONFIGFILE}" || {
+    echo "syslog-ng: configuration error in ${SYSLOG_NG_CONFIGFILE}" >&2
+    exit 1
+}
+
+# Ensure state directory exists with correct permissions
+install -d -m 0700 -o "${SYSLOG_NG_USER}" -g "${SYSLOG_NG_GROUP}" "${SYSLOG_NG_STATEFILE_DIR}"
+
+exec /usr/sbin/syslog-ng \
+    --foreground \
+    --cfgfile "${SYSLOG_NG_CONFIGFILE}" \
+    --control "${SYSLOG_NG_CONTROLFILE}" \
+    --persist-file "${SYSLOG_NG_STATEFILE}" \
+    --pidfile "${SYSLOG_NG_PIDFILE}" \
+    ${SYSLOG_NG_OPTS}

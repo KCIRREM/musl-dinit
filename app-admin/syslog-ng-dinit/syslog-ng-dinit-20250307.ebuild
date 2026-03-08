@@ -15,6 +15,8 @@ RDEPEND="
 
 S="${WORKDIR}"
 src_install() {
-	insinto /etc/dinit.d
+	insinto /usr/lib/dinit.d
 	doins "${FILESDIR}"/syslog-ng
+	exeinto /usr/lib/dinit
+	newexe "${FILESDIR}"/syslog-ng.script syslog-ng
 }
