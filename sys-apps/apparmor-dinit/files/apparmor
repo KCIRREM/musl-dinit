@@ -1,0 +1,10 @@
+type            = scripted
+command         = /bin/sh -c '. /usr/libexec/rc.apparmor.functions && parse_profiles load'
+stop-command    = /bin/sh -c '. /usr/libexec/rc.apparmor.functions && apparmor_stop'
+
+depends-on      = early-fs-local.target
+depends-on      = pseudofs
+before          = local.target
+
+start-timeout   = 120
+logfile         = /var/log/dinit/apparmor.log

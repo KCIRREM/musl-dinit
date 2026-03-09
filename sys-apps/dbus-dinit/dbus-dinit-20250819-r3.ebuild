@@ -28,5 +28,5 @@ src_install() {
 	newins dbus.user dbus
 	exeinto /usr/lib/dinit/user/
 	newexe dbus.user.script dbus
-	dosym -r -s /etc/dinit.d/user/dbus /usr/lib/dinit.d/user/boot.d/dbus
+	dosym -r /etc/dinit.d/user/dbus /usr/lib/dinit.d/user/boot.d/dbus
 }

@@ -40,7 +40,7 @@ src_compile() {
 
 	# Use 'other' distribution — no Gentoo target exists upstream.
 	# Avoids Ubuntu/Debian/Arch-specific path assumptions.
-	export DISTRIBUTION="other"
+	export DISTRIBUTION="arch"
 
 	# 'just complain' builds all profiles and sets them to complain mode.
 	# Safe default — do not use 'just enforce' without extensive testing
