@@ -27,7 +27,7 @@ BDEPEND="
 "
 
 RDEPEND="
-	sec-policy/apparmor
+	sys-apps/apparmor
 "
 
 # apparmor.d uses a custom Go-based build tool called 'aa-build'
