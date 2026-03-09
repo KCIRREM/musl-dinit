@@ -24,5 +24,5 @@ src_install() {
 	doins chrony
 
 	exeinto /usr/lib/dinit
-	doexe chronyd.script chronyd
+	newexe chronyd.script chronyd
 }

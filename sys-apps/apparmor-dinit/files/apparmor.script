@@ -1,0 +1,51 @@
+#!/bin/sh
+# AppArmor start/stop/reload script for dinit
+# Converted from OpenRC service
+
+aa_log_action_start() { echo "  * $1"; }
+aa_log_action_end()   { [ "$1" -eq 0 ] && echo "  [ ok ]" || echo "  [ failed ]"; }
+aa_log_success_msg()  { echo "  * $1"; }
+aa_log_warning_msg()  { echo "  * WARNING: $1" >&2; }
+aa_log_failure_msg()  { echo "  * ERROR: $1" >&2; }
+aa_log_skipped_msg()  { echo "  * $1"; }
+aa_log_daemon_msg()   { echo "  * $1"; }
+aa_log_end_msg()      { [ "$1" -eq 0 ] && echo "  [ ok ]" || echo "  [ failed ]"; }
+
+aa_action() {
+	local arg=$1
+	local ret
+	shift
+	"$@"
+	ret=$?
+	if [ ${ret} -eq 0 ]; then
+		aa_log_success_msg "$arg"
+	else
+		aa_log_failure_msg "$arg"
+	fi
+	return $ret
+}
+
+. /usr/libexec/rc.apparmor.functions
+
+case "$1" in
+	start)
+		echo "Starting AppArmor"
+		if ! is_apparmor_loaded; then
+			echo "ERROR: AppArmor kernel support is not present" >&2
+			exit 1
+		fi
+		parse_profiles load
+		;;
+	stop)
+		echo "Stopping AppArmor"
+		apparmor_stop
+		;;
+	reload)
+		echo "Reloading AppArmor"
+		apparmor_restart
+		;;
+	*)
+		echo "Usage: $0 {start|stop|reload}"
+		exit 1
+		;;
+esac
