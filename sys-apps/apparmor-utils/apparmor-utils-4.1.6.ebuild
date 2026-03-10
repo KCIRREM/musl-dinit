@@ -38,7 +38,6 @@ RDEPEND="
 "
 
 PATCHES=(
-	"${FILESDIR}/${PN}-4.0.3-binutils-Fix-missing-include-limits.h.patch"
 )
 
 src_prepare() {
