@@ -9,7 +9,7 @@ MY_PV="$(ver_cut 1-2)"
 
 DESCRIPTION="Userspace utils and init scripts for the AppArmor application security system"
 HOMEPAGE="https://gitlab.com/apparmor/apparmor/wikis/home"
-SRC_URI="https://launchpad.net/${PN}/${MY_PV}/${PV}/+download/${PN}-${PV}.tar.gz"
+SRC_URI="https://gitlab.com/apparmor/apparmor/-/archive/v${PV}/apparmor-v${PV}.tar.gz"
 S=${WORKDIR}/apparmor-${PV}/parser
 
 LICENSE="GPL-2"
@@ -34,7 +34,6 @@ BDEPEND="
 CONFIG_CHECK="SECURITY_APPARMOR"
 
 PATCHES=(
-	"${FILESDIR}/${PN}-4.0.3-convert-uint-to-unsigned-int.patch"
 )
 
 src_prepare() {

@@ -11,7 +11,7 @@ MY_PV="$(ver_cut 1-2)"
 
 DESCRIPTION="Additional userspace utils to assist with AppArmor profile management"
 HOMEPAGE="https://gitlab.com/apparmor/apparmor/wikis/home"
-SRC_URI="https://launchpad.net/apparmor/${MY_PV}/${PV}/+download/apparmor-${PV}.tar.gz"
+SRC_URI="https://gitlab.com/apparmor/apparmor/-/archive/v${PV}/apparmor-v${PV}.tar.gz"
 S=${WORKDIR}/apparmor-${PV}
 
 LICENSE="GPL-2"
@@ -39,7 +39,6 @@ RDEPEND="
 
 PATCHES=(
 	"${FILESDIR}/${PN}-4.0.3-binutils-Fix-missing-include-limits.h.patch"
-	"${FILESDIR}/${PN}-4.0.3-py3.13.patch"
 )
 
 src_prepare() {
