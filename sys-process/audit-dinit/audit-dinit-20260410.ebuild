@@ -23,7 +23,7 @@ RDEPEND="
 src_install() {
 	insinto /usr/lib/dinit.d/
 	doins auditd
-	doins auditdctl
+	doins auditctl
 	exeinto /usr/lib/dinit
 	newexe auditctl.script auditctl
 	insinto /etc/dinit.d/config/
