@@ -16,7 +16,7 @@ MY_PV="$(ver_cut 1-2)"
 DESCRIPTION="Library to support AppArmor userspace utilities"
 HOMEPAGE="https://gitlab.com/apparmor/apparmor/wikis/home"
 SRC_URI="https://gitlab.com/apparmor/apparmor/-/archive/v${PV}/apparmor-v${PV}.tar.gz"
-S=${WORKDIR}/apparmor-${PV}/libraries/${PN}
+S=${WORKDIR}/apparmor-v${PV}/libraries/${PN}
 
 LICENSE="GPL-2 LGPL-2.1"
 SLOT="0"

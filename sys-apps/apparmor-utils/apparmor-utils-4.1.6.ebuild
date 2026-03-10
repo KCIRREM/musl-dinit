@@ -12,7 +12,7 @@ MY_PV="$(ver_cut 1-2)"
 DESCRIPTION="Additional userspace utils to assist with AppArmor profile management"
 HOMEPAGE="https://gitlab.com/apparmor/apparmor/wikis/home"
 SRC_URI="https://gitlab.com/apparmor/apparmor/-/archive/v${PV}/apparmor-v${PV}.tar.gz"
-S=${WORKDIR}/apparmor-${PV}
+S=${WORKDIR}/apparmor-v${PV}
 
 LICENSE="GPL-2"
 SLOT="0"
