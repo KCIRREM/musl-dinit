@@ -20,6 +20,7 @@ PATCHES=(
 src_prepare() {
     default
 
+    sed -i '/install -Dm644 misc\/50-default.conf \$(DESTDIR)\$(LIBDIR)\/sysctl.d\/50-default.conf/d' "${S}"/Makefile
     if use mdevd; then
 	eapply "${FILESDIR}"/mdevd.patch
 	cp "${FILESDIR}"/mdevd* "${S}"/services
