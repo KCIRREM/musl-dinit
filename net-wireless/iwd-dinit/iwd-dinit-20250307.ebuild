@@ -24,6 +24,10 @@ BDEPEND="sys-apps/dinit"
 
 CONFLICT="init-iwd"
 
+src_configure() {
+	sed -i 's|/usr/lib/iwd/iwd|/usr/libexec/iwd|g' "${S}"/iwd
+}
+
 src_install() {
 	insinto /usr/lib/dinit.d
 	doins iwd
