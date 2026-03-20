@@ -8,7 +8,7 @@ KEYWORDS="amd64"
 
 IUSE="mdevd"
 
-DEPEND="sys-apps/dbus"
+DEPEND="sys-apps/dbus-dinit"
 RDEPEND="sys-apps/artix-cgroups"
 
 SRC_URI="https://gitea.artixlinux.org/artix/dinit-rc/archive/${PV}.tar.gz"
