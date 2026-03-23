@@ -1,4 +1,4 @@
-type            = scripted
+type            = process
 command         = /usr/bin/mdevd -O 4
 restart         = false
 depends-on      = early-prepare.target
