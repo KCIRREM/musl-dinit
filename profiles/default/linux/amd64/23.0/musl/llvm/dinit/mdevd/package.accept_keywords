@@ -1,2 +1,3 @@
 sys-fs/mdevd ~amd64
 dev-libs/skalibs ~amd64
+sys-libs/libudev-zero ~amd64
