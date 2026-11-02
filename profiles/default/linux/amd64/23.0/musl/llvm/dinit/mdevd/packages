@@ -1,2 +1,3 @@
 *virtual/libudev
 *sys-fs/mdevd
+*sys-libs/libudev-zero
