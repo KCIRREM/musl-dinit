@@ -1,3 +1,4 @@
 *sys-apps/dinit
 -*sys-devel/gcc
+-*sys-devel/binutils
 *llvm-runtimes/libgcc
