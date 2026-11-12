@@ -1,0 +1,3 @@
+*sys-apps/dinit
+-*sys-devel/gcc
+*llvm-runtimes/libgcc
