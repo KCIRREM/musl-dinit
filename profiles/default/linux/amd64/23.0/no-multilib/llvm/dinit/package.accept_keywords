@@ -18,3 +18,5 @@ llvm-runtimes/libcxxabi ~amd64
 llvm-runtimes/clang-unwindlib-config ~amd64
 llvm-runtimes/openmp ~amd64
 llvm-runtimes/clang-stdlib-config ~amd64
+sys-libs/glibc ~amd64
+dev-lang/rust ~amd64
