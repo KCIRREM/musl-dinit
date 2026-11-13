@@ -1,0 +1,10 @@
+--- /var/db/repos/guru/sys-apps/turnstile/turnstile-0.1.11-r1.ebuild	2026-11-12 02:55:12.228652106 +0000
++++ turnstile-0.1.11-r1.ebuild	2026-11-12 05:43:03.732948169 +0000
+@@ -23,7 +23,6 @@
+ 	app-text/scdoc
+ 	dinit? (
+ 		sys-apps/dinit
+-		sys-apps/dinit-services
+ 	)
+ 	runit? (
+ 		sys-process/runit

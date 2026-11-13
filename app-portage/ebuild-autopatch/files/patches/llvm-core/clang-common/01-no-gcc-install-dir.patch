@@ -1,0 +1,11 @@
+--- /tmp/cc.orig	2026-11-13 01:00:53.741756241 -0000
++++ /tmp/cc.new	2026-11-13 01:00:53.743756290 -0000
+@@ -322,7 +322,7 @@
+ }
+ 
+ pkg_preinst() {
+-	if has_version -b sys-devel/gcc-config && has_version sys-devel/gcc
++	if false && has_version -b sys-devel/gcc-config && has_version sys-devel/gcc
+ 	then
+ 		local gcc_path=$(gcc-config --get-lib-path 2>/dev/null)
+ 		if [[ -n ${gcc_path} ]]; then

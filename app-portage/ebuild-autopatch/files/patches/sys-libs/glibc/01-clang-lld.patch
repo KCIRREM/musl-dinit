@@ -1,0 +1,88 @@
+--- /var/db/repos/gentoo/sys-libs/glibc/glibc-2.44-r4.ebuild	2026-11-05 01:08:12.000000000 -0000
++++ /var/db/repos/autopatch/sys-libs/glibc/glibc-2.44-r4.ebuild	2026-11-12 23:15:30.219713213 -0000
+@@ -164,11 +164,16 @@
+ 	esac
+ else
+ 	BDEPEND+="
+-		>=sys-devel/binutils-2.27
+-		clang? ( || ( ( >=sys-devel/gcc-6.2 )
+-			( >=sys-devel/gcc-6.2 >=llvm-core/clang-18 )
+-			( >=llvm-core/clang-18 >=llvm-runtimes/libgcc-18 ) ) )
+-		!clang? ( >=sys-devel/gcc-6.2 )
++		clang? ( || (
++			( >=sys-devel/gcc-6.2 >=sys-devel/binutils-2.27 )
++			(
++				>=llvm-core/clang-18
++				|| ( >=sys-devel/gcc-6.2 >=llvm-runtimes/libgcc-18 )
++				|| ( >=llvm-core/lld-18 >=sys-devel/binutils-2.27 )
++			)
++		) )
++		!clang? ( >=sys-devel/gcc-6.2 >=sys-devel/binutils-2.27 )
++
+ 	"
+ 	DEPEND+=" virtual/os-headers "
+ 	RDEPEND+="
+@@ -531,6 +536,10 @@
+ 		append-ldflags '-Wl,--hash-style=both'
+ 	fi
+ 
++	# Gentoo's clang cfg force-includes fortify.h, which re-adds
++	# _FORTIFY_SOURCE after glibc's -U_FORTIFY_SOURCE and breaks ld.so
++	use clang && append-cppflags -D_GENTOO_NO_FORTIFY_SOURCE
++
+ 	# clang warns about linker flags unused during compilation, but we don't
+ 	# want that to turn into errors!
+ 	# Let's turn the warning off entirely since it spams.
+@@ -662,7 +671,11 @@
+ 	# glibc does not work with non-bfd (for various reasons):
+ 	# * gold (bug #269274)
+ 	# * mold (bug #860900)
+-	tc-ld-force-bfd
++	if use clang && ! tc-ld-is-lld && ! type -P ld.bfd >/dev/null; then
++		append-ldflags -fuse-ld=lld
++	elif ! ( use clang && tc-ld-is-lld ); then
++		tc-ld-force-bfd
++	fi
+ 
+ 	if use doc ; then
+ 		export MAKEINFO=makeinfo
+@@ -743,6 +756,30 @@
+ 
+ 	export glibc__abi_CFLAGS="$(get_abi_CFLAGS)"
+ 
++	if use clang && ! just_headers ; then
++		local rtdir="${T}/clang-rt-${ABI}"
++		local builtins crtb crte f
++		mkdir -p "${rtdir}" || die
++
++		builtins="$(${glibc__GLIBC_CC} ${glibc__abi_CFLAGS} -print-libgcc-file-name)"
++		ln -sf "${builtins}" "${rtdir}/libclang_rt.builtins.a" || die
++
++		# glibc links with -nostartfiles and asks the compiler for the
++		# GCC-named crt objects, which compiler-rt doesn't provide
++		crtb="${builtins/libclang_rt.builtins/clang_rt.crtbegin}"
++		crte="${builtins/libclang_rt.builtins/clang_rt.crtend}"
++		crtb="${crtb%.a}.o"
++		crte="${crte%.a}.o"
++		for f in crtbegin crtbeginS crtbeginT; do
++			ln -sf "${crtb}" "${rtdir}/${f}.o" || die
++		done
++		for f in crtend crtendS; do
++			ln -sf "${crte}" "${rtdir}/${f}.o" || die
++		done
++
++		append-ldflags -L"${rtdir}" -B"${rtdir}"
++	fi
++
+ 	# CFLAGS can contain ABI-specific flags like -mfpu=neon, see bug #657760
+ 	# To build .S (assembly) files with the same ABI-specific flags
+ 	# upstream currently recommends adding CFLAGS to CC/CXX:
+@@ -757,7 +794,7 @@
+ 
+ 	export CPP="${glibc__GLIBC_CPP} ${glibc__abi_CFLAGS} ${CFLAGS}"
+ 
+-	if is_crosscompile; then
++	if is_crosscompile || use clang ; then
+ 		# Assume worst-case bootstrap: glibc is built for the first time
+ 		# with ${CTARGET}-g++ not available yet. We avoid
+ 		# building auxiliary programs that require C++: bug #683074
