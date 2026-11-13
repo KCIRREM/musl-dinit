@@ -4,7 +4,7 @@
 EAPI=8
 
 DESCRIPTION="Maintain a local overlay of patched upstream ebuilds"
-HOMEPAGE="
+HOMEPAGE=""
 S="${WORKDIR}"
 
 LICENSE="GPL-2+"
