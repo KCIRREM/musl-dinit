@@ -1,0 +1,240 @@
+#!/bin/bash
+# Maintain ::ebuild-autopatch: a patched copy of the best visible upstream ebuild across
+# all configured repos for every package in:
+#   - /usr/share/ebuild-autopatch/patches/<cat>/<pkg>/*.patch (system default patchset)
+#   - /etc/portage/ebuild-patches/<cat>/<pkg>/*.patch  (local user patches/overrides)
+set -uo pipefail
+shopt -s nullglob
+
+REPO_NAME="ebuild-autopatch"
+AUTOPATCH_REPO="/var/db/repos/${REPO_NAME}"
+SYS_PATCH_ROOT="/usr/share/${REPO_NAME}/patches"
+LOCAL_PATCH_ROOT="/etc/portage/ebuild-patches"
+STATE_DIR="/var/lib/${REPO_NAME}"
+PATCH_FUZZ="${PATCH_FUZZ:-2}"
+
+log()  { echo ">>> [$REPO_NAME] $*"; }
+warn() { echo "  [!] $*" >&2; }
+
+[[ $EUID -eq 0 ]] || { echo "Must be run as root" >&2; exit 1; }
+[[ -d $AUTOPATCH_REPO/metadata && -d $STATE_DIR ]] || {
+    warn "Repository or state directory missing; is app-portage/${REPO_NAME} installed?"
+    exit 1
+}
+
+exec 9>"/run/lock/${REPO_NAME}.lock"
+flock -n 9 || { log "Already running, exiting"; exit 0; }
+
+WORK=$(mktemp -d) || exit 1
+trap 'rm -rf "$WORK"' EXIT
+
+# 1. Query portageq for all enabled upstream repositories (sorted highest priority first)
+declare -a UPSTREAM_REPOS=()
+declare -A REPO_PATHS=()
+
+discover_repos() {
+    local r path all_repos=()
+    read -r -a all_repos <<< "$(portageq get_repos /)"
+
+    for r in "${all_repos[@]}"; do
+        [[ $r == "$REPO_NAME" ]] && continue
+        path=$(portageq get_repo_path / "$r") || continue
+        [[ -d $path ]] || continue
+        UPSTREAM_REPOS+=("$r")
+        REPO_PATHS["$r"]=$path
+    done
+
+    (( ${#UPSTREAM_REPOS[@]} )) || exit 0
+}
+
+# 2. Sync layout.conf masters with active overlays
+sync_layout() {
+    local r masters_list=() layout_content
+
+    [[ -n ${REPO_PATHS[gentoo]:-} ]] && masters_list+=("gentoo")
+    for (( idx=${#UPSTREAM_REPOS[@]}-1 ; idx>=0 ; idx-- )); do
+        r=${UPSTREAM_REPOS[idx]}
+        [[ $r == "gentoo" ]] && continue
+        masters_list+=("$r")
+    done
+
+    layout_content=$(printf 'masters = %s\nthin-manifests = true\n' "${masters_list[*]}")
+
+    if [[ ! -f $AUTOPATCH_REPO/metadata/layout.conf ]] || [[ $(<"$AUTOPATCH_REPO/metadata/layout.conf") != "$layout_content" ]]; then
+        printf '%s\n' "$layout_content" > "$AUTOPATCH_REPO/metadata/layout.conf"
+        chown portage:portage "$AUTOPATCH_REPO/metadata/layout.conf"
+    fi
+}
+
+# 3. Collect effective patches for <cat>/<pkg> across system and local roots.
+#    A file in LOCAL_PATCH_ROOT with the same basename overrides SYS_PATCH_ROOT;
+#    an empty override file (or symlink to /dev/null) masks the system patch.
+collect_patches() {
+    local cat_pkg=$1 p base
+    local -A by_name=()
+    local names=()
+
+    for p in "$SYS_PATCH_ROOT/$cat_pkg"/*.patch "$LOCAL_PATCH_ROOT/$cat_pkg"/*.patch; do
+        [[ -f $p || -L $p ]] || continue
+        by_name["${p##*/}"]=$p
+    done
+
+    (( ${#by_name[@]} )) || return 0
+    mapfile -d '' -t names < <(printf '%s\0' "${!by_name[@]}" | sort -z)
+
+    for base in "${names[@]}"; do
+        p=${by_name[$base]}
+        [[ -s $p ]] && printf '%s\0' "$p"
+    done
+}
+
+# 4. Find the best visible ebuild across all upstream repos using portageq
+#    Optional: pin a repo via <patch_root>/<cat>/<pkg>/repo (local overrides system)
+find_upstream() {
+    local cat_pkg=$1
+    local local_pin="$LOCAL_PATCH_ROOT/$cat_pkg/repo"
+    local sys_pin="$SYS_PATCH_ROOT/$cat_pkg/repo"
+    local r repo_dir cpv best_cpv="" best_repo="" best_src="" best_eb=""
+    local search_repos=("${UPSTREAM_REPOS[@]}")
+
+    if [[ -f $local_pin ]]; then
+        read -r r < "$local_pin"
+        search_repos=("$r")
+    elif [[ -f $sys_pin ]]; then
+        read -r r < "$sys_pin"
+        search_repos=("$r")
+    fi
+
+    for r in "${search_repos[@]}"; do
+        repo_dir=${REPO_PATHS[$r]:-}
+        [[ -n $repo_dir && -d $repo_dir/$cat_pkg ]] || continue
+
+        cpv=$(portageq best_visible / ebuild "${cat_pkg}::${r}" 2>/dev/null) || continue
+        [[ -n $cpv ]] || continue
+
+        # Pick first match, or override if a lower-priority repo has a strictly newer visible version
+        if [[ -z $best_cpv ]] || [[ -n $(portageq best_visible / ebuild ">${best_cpv}::${r}" 2>/dev/null) ]]; then
+            best_cpv=$cpv
+            best_repo=$r
+            best_src="$repo_dir/$cat_pkg"
+            best_eb="${cpv#*/}.ebuild"
+        fi
+    done
+
+    [[ -n $best_eb ]] || return 1
+    printf '%s|%s|%s\n' "$best_repo" "$best_src" "$best_eb"
+}
+
+# 5. Remove packages whose patches (or upstream package) are gone
+prune() {
+    local dir cat_pkg patches=()
+    for dir in "$AUTOPATCH_REPO"/*/*/; do
+        cat_pkg=${dir#"$AUTOPATCH_REPO"/}; cat_pkg=${cat_pkg%/}
+        case $cat_pkg in profiles/*|metadata/*|eclass/*|licenses/*) continue ;; esac
+
+        mapfile -d '' -t patches < <(collect_patches "$cat_pkg")
+        if (( ${#patches[@]} == 0 )) || ! find_upstream "$cat_pkg" >/dev/null; then
+            log "Removing $cat_pkg (no active patches or no visible upstream ebuild)"
+            rm -rf -- "$dir"
+            rm -f -- "$STATE_DIR/$cat_pkg.sha256"
+            rmdir --ignore-fail-on-non-empty "$(dirname "${dir%/}")" "$STATE_DIR/${cat_pkg%/*}" 2>/dev/null || true
+        fi
+    done
+}
+
+# 6. Build one package; returns non-zero on failure
+process_pkg() {
+    local cat_pkg=$1
+    local dst="$AUTOPATCH_REPO/$cat_pkg"
+    local state="$STATE_DIR/$cat_pkg.sha256"
+    local patches=()
+    local resolved src_repo src target stamp stage p
+
+    mapfile -d '' -t patches < <(collect_patches "$cat_pkg")
+    (( ${#patches[@]} )) || return 0
+
+    if ! resolved=$(find_upstream "$cat_pkg"); then
+        warn "$cat_pkg has no visible ebuild in active repos (${UPSTREAM_REPOS[*]}), skipping"
+        return 0
+    fi
+    IFS='|' read -r src_repo src target <<< "$resolved"
+
+    stamp=$(
+        {
+            echo "repo:$src_repo"
+            cd "$src" && find . -type f ! -name '*.ebuild' -print0 | sort -z | xargs -0 -r sha256sum
+            sha256sum "$src/$target"
+            sha256sum "${patches[@]}"
+        } | sha256sum | cut -d' ' -f1
+    )
+    if [[ -d $dst && -f $state && $(<"$state") == "$stamp" ]]; then
+        return 0
+    fi
+
+    log "Preparing $cat_pkg/$target (from ::$src_repo)..."
+    stage="$WORK/stage"
+    rm -rf "$stage"; mkdir -p "$stage"
+    rsync -a --exclude='*.ebuild' "$src/" "$stage/" || return 1
+    cp -p "$src/$target" "$stage/"
+
+    if [[ -f $stage/Manifest ]]; then
+        grep '^DIST ' "$stage/Manifest" > "$stage/Manifest.thin" || true
+        mv -f "$stage/Manifest.thin" "$stage/Manifest"
+    fi
+
+    for p in "${patches[@]}"; do
+        echo "  -> Applying ${p##*/} (${p%/*})"
+        if ! patch --batch -s -r - --no-backup-if-mismatch --fuzz="$PATCH_FUZZ" \
+                   "$stage/$target" < "$p"; then
+            warn "Patch ${p##*/} failed on $target (::$src_repo); falling back to ::$src_repo"
+            rm -rf -- "$dst"; rm -f -- "$state"
+            rmdir --ignore-fail-on-non-empty "${dst%/*}" "${state%/*}" 2>/dev/null || true
+            return 1
+        fi
+    done
+
+    mkdir -p "$dst" "${state%/*}"
+    rsync -a --delete --chown=portage:portage "$stage/" "$dst/" || return 1
+
+    grep -qxF "${cat_pkg%/*}" "$AUTOPATCH_REPO/profiles/categories" 2>/dev/null || \
+        echo "${cat_pkg%/*}" >> "$AUTOPATCH_REPO/profiles/categories"
+
+    if grep -qhE '^[+-].*(SRC_URI|https?://|ftp://|mirror://)' "${patches[@]}"; then
+        if ! ebuild "$dst/$target" manifest >/dev/null; then
+            warn "Manifest generation failed for $cat_pkg"
+            rm -rf -- "$dst"; rm -f -- "$state"
+            rmdir --ignore-fail-on-non-empty "${dst%/*}" "${state%/*}" 2>/dev/null || true
+            return 1
+        fi
+        chown portage:portage "$dst/Manifest"
+    fi
+
+    echo "$stamp" > "$state"
+    echo "  -> Patched $cat_pkg/$target::$REPO_NAME (source: ::$src_repo)"
+}
+
+discover_repos
+sync_layout
+prune
+
+declare -A SEEN_PKGS=()
+for root in "$SYS_PATCH_ROOT" "$LOCAL_PATCH_ROOT"; do
+    [[ -d $root ]] || continue
+    for patch_dir in "$root"/*/*/; do
+        cat_pkg=${patch_dir#"$root"/}; cat_pkg=${cat_pkg%/}
+        SEEN_PKGS["$cat_pkg"]=1
+    done
+done
+
+failed=()
+if (( ${#SEEN_PKGS[@]} )); then
+    mapfile -d '' -t pkg_list < <(printf '%s\0' "${!SEEN_PKGS[@]}" | sort -z)
+    for cat_pkg in "${pkg_list[@]}"; do
+        process_pkg "$cat_pkg" || failed+=("$cat_pkg")
+    done
+fi
+
+if (( ${#failed[@]} )); then
+    warn "Failed packages: ${failed[*]}"
+    exit 1
+fi
